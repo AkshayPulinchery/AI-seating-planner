@@ -11,7 +11,7 @@ const Layout = () => {
         { path: '/', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/students', label: 'Students', icon: Users },
         { path: '/classrooms', label: 'Classrooms', icon: School },
-        { path: '/invigilators', label: 'Invigilators', icon: null }, // Removed icon to debug white screen
+        { path: '/invigilators', label: 'Invigilators', icon: User },
         { path: '/seating', label: 'Seating', icon: Armchair },
         { path: '/change-password', label: 'Password', icon: KeyRound },
     ];
