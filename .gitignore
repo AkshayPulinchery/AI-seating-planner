@@ -1,0 +1,10 @@
+node_modules
+.env
+.DS_Store
+dist
+dist-ssr
+*.local
+.vscode
+server/exam_system.db
+server/uploads/*
+!server/uploads/.gitkeep
