@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { Plus, Trash2, UserCheck } from 'lucide-react';
+import { Plus, Trash2, User } from 'lucide-react';
 
 const Invigilators = () => {
     const [invigilators, setInvigilators] = useState([]);
@@ -9,7 +9,12 @@ const Invigilators = () => {
     const fetchInvigilators = async () => {
         try {
             const res = await api.get('/invigilators');
-            setInvigilators(res.data);
+            if (Array.isArray(res.data)) {
+                setInvigilators(res.data);
+            } else {
+                console.error("Invalid response format:", res.data);
+                setInvigilators([]);
+            }
         } catch (error) {
             console.error(error);
         }
@@ -73,7 +78,7 @@ const Invigilators = () => {
 
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-4 border-b bg-gray-50">
-                    <h3 className="text-lg font-semibold">Invigilators List ({invigilators.length})</h3>
+                    <h3 className="text-lg font-semibold">Invigilators List ({(invigilators || []).length})</h3>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -85,10 +90,10 @@ const Invigilators = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {invigilators.length > 0 ? invigilators.map(inv => (
+                            {Array.isArray(invigilators) && invigilators.length > 0 ? invigilators.map(inv => (
                                 <tr key={inv.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-3 font-medium flex items-center">
-                                        <UserCheck className="w-4 h-4 mr-2 text-blue-500" />
+                                        <User className="w-4 h-4 mr-2 text-blue-500" />
                                         {inv.name}
                                     </td>
                                     <td className="px-6 py-3 text-gray-500">{inv.email || '-'}</td>

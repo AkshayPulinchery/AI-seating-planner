@@ -37,6 +37,7 @@ function initDb() {
             student1Id INTEGER,
             student2Id INTEGER,
             FOREIGN KEY(roomId) REFERENCES classrooms(id),
+            FOREIGN KEY(student1Id) REFERENCES students(id),
             FOREIGN KEY(student2Id) REFERENCES students(id)
         )`);
 
