@@ -15,4 +15,19 @@ router.post('/login', (req, res) => {
     });
 });
 
+router.post('/change-password', (req, res) => {
+    const { username, oldPassword, newPassword } = req.body;
+    db.get("SELECT * FROM admin WHERE username = ? AND password = ?", [username, oldPassword], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) {
+            return res.status(401).json({ error: 'Current password incorrect' });
+        }
+
+        db.run("UPDATE admin SET password = ? WHERE username = ?", [newPassword, username], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Password updated successfully' });
+        });
+    });
+});
+
 module.exports = router;

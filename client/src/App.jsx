@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Classrooms from './pages/Classrooms';
 import Seating from './pages/Seating';
+import ChangePassword from './pages/ChangePassword';
 import Layout from './components/Layout';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="students" element={<Students />} />
           <Route path="classrooms" element={<Classrooms />} />
           <Route path="seating" element={<Seating />} />
+          <Route path="change-password" element={<ChangePassword />} />
         </Route>
       </Routes>
     </Router>
