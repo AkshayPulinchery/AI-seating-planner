@@ -4,6 +4,7 @@ import { Plus, Trash2, LayoutGrid } from 'lucide-react';
 
 const Classrooms = () => {
     const [classrooms, setClassrooms] = useState([]);
+    const [selectedRooms, setSelectedRooms] = useState([]);
     const [newRoom, setNewRoom] = useState({ roomName: '', benchCount: '' });
 
     const fetchClassrooms = async () => {
@@ -40,6 +41,26 @@ const Classrooms = () => {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (selectedRooms.length === 0) return;
+        if (!window.confirm(`Delete ${selectedRooms.length} classrooms?`)) return;
+        try {
+            await api.post('/classrooms/delete-bulk', { ids: selectedRooms });
+            setSelectedRooms([]);
+            fetchClassrooms();
+        } catch (error) {
+            alert("Error deleting classrooms");
+        }
+    };
+
+    const toggleSelect = (id) => {
+        if (selectedRooms.includes(id)) {
+            setSelectedRooms(selectedRooms.filter(rid => rid !== id));
+        } else {
+            setSelectedRooms([...selectedRooms, id]);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <h2 className="text-3xl font-bold text-gray-900">Classroom Management</h2>
@@ -72,10 +93,28 @@ const Classrooms = () => {
                 </form>
             </div>
 
+            {selectedRooms.length > 0 && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleBulkDelete}
+                        className="flex items-center px-4 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Selected ({selectedRooms.length})
+                    </button>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {classrooms.map(room => (
-                    <div key={room.id} className="p-6 bg-white rounded-lg shadow-md">
-                        <div className="flex justify-between items-start">
+                    <div key={room.id} className="p-6 bg-white rounded-lg shadow-md relative group">
+                        <input
+                            type="checkbox"
+                            checked={selectedRooms.includes(room.id)}
+                            onChange={() => toggleSelect(room.id)}
+                            className="absolute top-4 left-4 rounded border-gray-300 w-5 h-5 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div className="flex justify-between items-start pl-8">
                             <div>
                                 <h3 className="text-xl font-semibold text-gray-900">{room.roomName}</h3>
                                 <p className="text-gray-500 flex items-center mt-2">

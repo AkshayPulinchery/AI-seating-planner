@@ -22,6 +22,19 @@ router.post('/', (req, res) => {
     );
 });
 
+// Bulk delete classrooms
+router.post('/delete-bulk', (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: 'Invalid IDs' });
+    }
+    const placeholders = ids.map(() => '?').join(',');
+    db.run(`DELETE FROM classrooms WHERE id IN (${placeholders})`, ids, function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Deleted', changes: this.changes });
+    });
+});
+
 // Delete classroom
 router.delete('/:id', (req, res) => {
     db.run("DELETE FROM classrooms WHERE id = ?", req.params.id, function (err) {

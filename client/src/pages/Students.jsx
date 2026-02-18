@@ -6,6 +6,7 @@ const Students = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedStudents, setSelectedStudents] = useState([]);
     const [newStudent, setNewStudent] = useState({ name: '', registerNumber: '', examCode: '' });
     const [uploadFile, setUploadFile] = useState(null);
 
@@ -60,6 +61,34 @@ const Students = () => {
             fetchStudents();
         } catch (error) {
             console.error(error);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedStudents.length === 0) return;
+        if (!window.confirm(`Delete ${selectedStudents.length} students?`)) return;
+        try {
+            await api.post('/students/delete-bulk', { ids: selectedStudents });
+            setSelectedStudents([]);
+            fetchStudents();
+        } catch (error) {
+            alert("Error deleting students");
+        }
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedStudents.length === filteredStudents.length) {
+            setSelectedStudents([]);
+        } else {
+            setSelectedStudents(filteredStudents.map(s => s.id));
+        }
+    };
+
+    const toggleSelect = (id) => {
+        if (selectedStudents.includes(id)) {
+            setSelectedStudents(selectedStudents.filter(sid => sid !== id));
+        } else {
+            setSelectedStudents([...selectedStudents, id]);
         }
     };
 
@@ -147,8 +176,19 @@ const Students = () => {
 
             {/* List */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                    <h3 className="text-lg font-semibold">Registered Students ({students.length})</h3>
+                <div className="p-4 border-b flex justify-between items-center bg-gray-50 flex-wrap gap-2">
+                    <div className="flex items-center gap-4">
+                        <h3 className="text-lg font-semibold">Registered Students ({students.length})</h3>
+                        {selectedStudents.length > 0 && (
+                            <button
+                                onClick={handleBulkDelete}
+                                className="flex items-center px-3 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                            >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete ({selectedStudents.length})
+                            </button>
+                        )}
+                    </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                         <input
@@ -163,6 +203,14 @@ const Students = () => {
                     <table className="w-full text-left">
                         <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
                             <tr>
+                                <th className="px-6 py-3 w-10">
+                                    <input
+                                        type="checkbox"
+                                        checked={filteredStudents.length > 0 && selectedStudents.length === filteredStudents.length}
+                                        onChange={toggleSelectAll}
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                </th>
                                 <th className="px-6 py-3">Name</th>
                                 <th className="px-6 py-3">Register No</th>
                                 <th className="px-6 py-3">Exam Code</th>
@@ -172,6 +220,14 @@ const Students = () => {
                         <tbody className="divide-y divide-gray-200">
                             {filteredStudents.length > 0 ? filteredStudents.map(student => (
                                 <tr key={student.id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedStudents.includes(student.id)}
+                                            onChange={() => toggleSelect(student.id)}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                    </td>
                                     <td className="px-6 py-3">{student.name}</td>
                                     <td className="px-6 py-3 font-mono text-sm">{student.registerNumber}</td>
                                     <td className="px-6 py-3"><span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">{student.examCode}</span></td>

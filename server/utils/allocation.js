@@ -42,10 +42,43 @@ function insertSeating(seatingData) {
 }
 
 
+
+function getAllInvigilators() {
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM invigilators", [], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+}
+
+function clearRoomAssignments() {
+    return new Promise((resolve, reject) => {
+        db.run("DELETE FROM room_assignments", [], (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+}
+
+function insertRoomAssignments(assignments) {
+    if (assignments.length === 0) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        const placeholders = assignments.map(() => "(?, ?, ?)").join(", ");
+        const values = assignments.flatMap(a => [a.roomId, a.invigilator1Id, a.invigilator2Id]);
+        const sql = `INSERT INTO room_assignments (roomId, invigilator1Id, invigilator2Id) VALUES ${placeholders}`;
+        db.run(sql, values, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+}
+
 async function generateSeating() {
     try {
         const students = await getAllStudents();
         const classrooms = await getAllClassrooms();
+        const invigilators = await getAllInvigilators();
 
         if (students.length === 0 || classrooms.length === 0) {
             throw new Error("Students or Classrooms data missing.");
@@ -60,35 +93,24 @@ async function generateSeating() {
             studentsByExam[s.examCode].push(s);
         });
 
-        // 2. Sort exam groups by size (descending) to handle largest constraints first
+        // 2. Sort exam groups by size
         const examCodes = Object.keys(studentsByExam).sort((a, b) => studentsByExam[b].length - studentsByExam[a].length);
 
         // 3. Prepare Benches
-        // Flatten all bench slots across all rooms
         let allBenches = [];
         classrooms.forEach(room => {
             for (let i = 1; i <= room.benchCount; i++) {
                 allBenches.push({
                     roomId: room.id,
                     benchNumber: i,
-                    seats: [null, null] // Max 2 students per bench
+                    seats: [null, null]
                 });
             }
         });
 
         // 4. Allocation Logic
-        // We will iterate through benches and fill them.
-
-        // Helper to get next student from the largest available group that isn't `excludeExamCode`
         const getStudent = (excludeExamCode) => {
-            // Sort exams by remaining count dynamically? Or just iterate.
-            // Simple: iterate through our sorted examCodes, pick first valid.
-            // Re-sorting every time might be slow for 500 students, but 500 is small.
-            // Optimization: Keep a persistent sorted structure or just linear scan since num_exams is likely small.
-
-            // Re-sort examCodes based on current remaining count
             examCodes.sort((a, b) => studentsByExam[b].length - studentsByExam[a].length);
-
             for (const code of examCodes) {
                 if (code !== excludeExamCode && studentsByExam[code].length > 0) {
                     return { student: studentsByExam[code].pop(), code: code };
@@ -97,31 +119,22 @@ async function generateSeating() {
             return null;
         };
 
-        for (let bench of allBenches) {
-            // Fill Seat 1
-            const slot1 = getStudent(null);
-            if (!slot1) break; // No more students
-            bench.seats[0] = slot1.student;
+        const activeRoomIds = new Set();
 
-            // Fill Seat 2
-            const slot2 = getStudent(slot1.code); // Must differ from slot1's exam code
+        for (let bench of allBenches) {
+            const slot1 = getStudent(null);
+            if (!slot1) break;
+            bench.seats[0] = slot1.student;
+            activeRoomIds.add(bench.roomId);
+
+            const slot2 = getStudent(slot1.code);
             if (slot2) {
                 bench.seats[1] = slot2.student;
-            } else {
-                // Could not find a student from a different exam. 
-                // Checks if we have same-exam students left?
-                // Rule: "Students with the same exam code must not sit on the same bench"
-                // So we leave it empty.
             }
         }
 
-        // 5. Save to DB
-        // Check for any unallocated students?
+        // 5. Save Seating to DB
         const remaining = examCodes.reduce((acc, code) => acc + studentsByExam[code].length, 0);
-        if (remaining > 0) {
-            console.warn(`${remaining} students could not be allocated due to constraints or lack of space.`);
-        }
-
         await clearSeating();
 
         const seatingEntries = allBenches
@@ -133,11 +146,39 @@ async function generateSeating() {
                 student2Id: b.seats[1] ? b.seats[1].id : null
             }));
 
-        // Batch insert
-        // SQLite limit variables, so chunk it if necessary. 500 students -> ~250 rows. Safe.
         await insertSeating(seatingEntries);
 
-        return { success: true, allocated: seatingEntries.length * 2 - seatingEntries.filter(s => !s.student2Id).length, unallocated: remaining };
+        // 6. Assign Invigilators
+        await clearRoomAssignments();
+        const roomAssignments = [];
+        const activeRoomsList = Array.from(activeRoomIds);
+
+        // Simple random assignment, 2 per room
+        // If not enough invigilators, some rooms might get 1 or 0
+        // We shuffle invigilators first
+        const shuffledInvigilators = [...invigilators].sort(() => 0.5 - Math.random());
+        let invigilatorIndex = 0;
+
+        activeRoomsList.forEach(roomId => {
+            if (invigilatorIndex < shuffledInvigilators.length) {
+                const i1 = shuffledInvigilators[invigilatorIndex++];
+                const i2 = invigilatorIndex < shuffledInvigilators.length ? shuffledInvigilators[invigilatorIndex++] : null;
+                roomAssignments.push({
+                    roomId: roomId,
+                    invigilator1Id: i1.id,
+                    invigilator2Id: i2 ? i2.id : null
+                });
+            }
+        });
+
+        await insertRoomAssignments(roomAssignments);
+
+        return {
+            success: true,
+            allocated: seatingEntries.length * 2 - seatingEntries.filter(s => !s.student2Id).length,
+            unallocated: remaining,
+            roomsAssigned: roomAssignments.length
+        };
 
     } catch (error) {
         console.error("Allocation failed:", error);

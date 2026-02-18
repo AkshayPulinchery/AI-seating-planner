@@ -37,8 +37,25 @@ function initDb() {
             student1Id INTEGER,
             student2Id INTEGER,
             FOREIGN KEY(roomId) REFERENCES classrooms(id),
-            FOREIGN KEY(student1Id) REFERENCES students(id),
             FOREIGN KEY(student2Id) REFERENCES students(id)
+        )`);
+
+        // Invigilators table
+        db.run(`CREATE TABLE IF NOT EXISTS invigilators (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT
+        )`);
+
+        // Room Assignments (linking invigilators to rooms for a seating session)
+        db.run(`CREATE TABLE IF NOT EXISTS room_assignments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            roomId INTEGER NOT NULL,
+            invigilator1Id INTEGER,
+            invigilator2Id INTEGER,
+            FOREIGN KEY(roomId) REFERENCES classrooms(id),
+            FOREIGN KEY(invigilator1Id) REFERENCES invigilators(id),
+            FOREIGN KEY(invigilator2Id) REFERENCES invigilators(id)
         )`);
 
         // Admin table (simple constraint)

@@ -20,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/classrooms', classroomRoutes);
 app.use('/api/seating', seatingRoutes);
+app.use('/api/invigilators', require('./routes/invigilators'));
 
 // Fix for pinging /api directly
 app.get('/api', (req, res) => {

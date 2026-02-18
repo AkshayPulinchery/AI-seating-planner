@@ -81,6 +81,18 @@ const Seating = () => {
         XLSX.writeFile(wb, "seating_chart.xlsx");
     };
 
+    // Group seating by room
+    const rooms = {};
+    seating.forEach(row => {
+        if (!rooms[row.roomName]) {
+            rooms[row.roomName] = {
+                rows: [],
+                invigilators: [row.invigilator1, row.invigilator2].filter(Boolean)
+            };
+        }
+        rooms[row.roomName].rows.push(row);
+    });
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -103,50 +115,60 @@ const Seating = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
-                            <tr>
-                                <th className="px-6 py-3 border-b">Room</th>
-                                <th className="px-6 py-3 border-b">Bench</th>
-                                <th className="px-6 py-3 border-b bg-blue-50">Student 1</th>
-                                <th className="px-6 py-3 border-b bg-green-50">Student 2</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {seating.length > 0 ? seating.map((row, index) => (
-                                <tr key={row.id || index} className="hover:bg-gray-50">
-                                    <td className="px-6 py-3 font-medium">{row.roomName}</td>
-                                    <td className="px-6 py-3">{row.benchNumber}</td>
-                                    <td className="px-6 py-3 border-l border-gray-100">
-                                        {row.student1Name ? (
-                                            <div>
-                                                <div className="font-medium">{row.student1Name}</div>
-                                                <div className="text-xs text-gray-400">{row.student1Reg} • {row.student1Exam}</div>
-                                            </div>
-                                        ) : <span className="text-gray-300">-</span>}
-                                    </td>
-                                    <td className="px-6 py-3 border-l border-gray-100">
-                                        {row.student2Name ? (
-                                            <div>
-                                                <div className="font-medium">{row.student2Name}</div>
-                                                <div className="text-xs text-gray-400">{row.student2Reg} • {row.student2Exam}</div>
-                                            </div>
-                                        ) : <span className="text-gray-300">-</span>}
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr>
-                                    <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                                        No seating arrangement generated yet. Click "Generate" to start.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+            {seating.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 bg-white rounded-lg shadow-md">
+                    No seating arrangement generated yet. Click "Generate" to start.
                 </div>
-            </div>
+            ) : (
+                Object.keys(rooms).map(roomName => (
+                    <div key={roomName} className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+                        <div className="p-4 bg-gray-50 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                            <h3 className="text-xl font-bold text-gray-800">{roomName}</h3>
+                            <div className="text-sm text-gray-600">
+                                <span className="font-semibold mr-2">Invigilators:</span>
+                                {rooms[roomName].invigilators.length > 0
+                                    ? rooms[roomName].invigilators.join(', ')
+                                    : <span className="text-red-500 italic">None Assigned</span>
+                                }
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
+                                    <tr>
+                                        <th className="px-6 py-3 border-b border-r w-24">Bench</th>
+                                        <th className="px-6 py-3 border-b bg-blue-50 w-1/2">Student 1</th>
+                                        <th className="px-6 py-3 border-b bg-green-50 w-1/2">Student 2</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {rooms[roomName].rows.map((row) => (
+                                        <tr key={row.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-3 font-medium border-r text-center">{row.benchNumber}</td>
+                                            <td className="px-6 py-3 border-r relative group">
+                                                {row.student1Name ? (
+                                                    <div>
+                                                        <div className="font-medium text-blue-900">{row.student1Name}</div>
+                                                        <div className="text-xs text-gray-500">{row.student1Reg} • <span className="font-mono bg-blue-100 px-1 rounded">{row.student1Exam}</span></div>
+                                                    </div>
+                                                ) : <span className="text-gray-300">-</span>}
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                {row.student2Name ? (
+                                                    <div>
+                                                        <div className="font-medium text-green-900">{row.student2Name}</div>
+                                                        <div className="text-xs text-gray-500">{row.student2Reg} • <span className="font-mono bg-green-100 px-1 rounded">{row.student2Exam}</span></div>
+                                                    </div>
+                                                ) : <span className="text-gray-300">-</span>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ))
+            )}
         </div>
     );
 };
