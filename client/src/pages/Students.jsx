@@ -41,14 +41,15 @@ const Students = () => {
         const formData = new FormData();
         formData.append('file', uploadFile);
         try {
-            await api.post('/students/upload', formData, {
+            const res = await api.post('/students/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setUploadFile(null);
             fetchStudents();
-            alert('Upload successful');
+            alert(res.data.message);
         } catch (error) {
-            alert('Error uploading file');
+            console.error("Upload error:", error);
+            alert('Error uploading file: ' + (error.response?.data?.error || error.message));
         }
     };
 
@@ -109,7 +110,24 @@ const Students = () => {
                 <div className="p-6 bg-white rounded-lg shadow-md">
                     <h3 className="mb-4 text-lg font-semibold flex items-center"><Upload className="w-5 h-5 mr-2" /> Upload CSV</h3>
                     <form onSubmit={handleUpload} className="space-y-4">
-                        <p className="text-sm text-gray-500">CSV must have headers: Name, RegisterNumber, ExamCode</p>
+                        <div className="flex justify-between items-center text-sm text-gray-500">
+                            <p>CSV Headers: Name, RegisterNumber, ExamCode</p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const csvContent = "Name,RegisterNumber,ExamCode\nJohn Doe,REG001,CS101";
+                                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = "student_template.csv";
+                                    a.click();
+                                }}
+                                className="text-blue-600 hover:underline text-xs"
+                            >
+                                Download Template
+                            </button>
+                        </div>
                         <input
                             type="file"
                             accept=".csv"

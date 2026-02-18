@@ -38,25 +38,35 @@ router.post('/upload', upload.single('file'), (req, res) => {
         .on('data', (data) => results.push(data))
         .on('end', () => {
             // Processing CSV data
-            // Expected headers: Name, RegisterNumber, ExamCode (case sensitive handling needed?)
-            // Let's assume headers are correct or map them.
+            console.log("CSV Headers detected:", Object.keys(results[0] || {}));
 
             const stmt = db.prepare("INSERT OR IGNORE INTO students (name, registerNumber, examCode) VALUES (?, ?, ?)");
             let insertedCheck = 0;
+            let failedRows = 0;
 
             db.serialize(() => {
                 db.run("BEGIN TRANSACTION");
-                results.forEach(row => {
-                    // Adapt keys to match what might be in CSV (e.g. "Student Name", "Register No")
-                    // For MVP assume keys match exactly or are simple.
-                    // Let's look for common variations or just expect standard keys.
-                    const name = row['Name'] || row['name'] || row['Student Name'];
-                    const regNo = row['RegisterNumber'] || row['registerNumber'] || row['Register Number'];
-                    const exam = row['ExamCode'] || row['examCode'] || row['Exam Code'];
+                results.forEach((row, index) => {
+                    // normalize keys to lowercase and remove whitespace/BOM
+                    const normalizedRow = {};
+                    Object.keys(row).forEach(key => {
+                        const cleanKey = key.trim().toLowerCase().replace(/^\ufeff/, '');
+                        normalizedRow[cleanKey] = row[key];
+                    });
+
+                    // console.log(`Row ${index}:`, normalizedRow);
+
+                    // Map possible header names
+                    const name = normalizedRow['name'] || normalizedRow['student name'] || normalizedRow['studentname'];
+                    const regNo = normalizedRow['registernumber'] || normalizedRow['register number'] || normalizedRow['regno'] || normalizedRow['register no'];
+                    const exam = normalizedRow['examcode'] || normalizedRow['exam code'] || normalizedRow['subjectcode'];
 
                     if (name && regNo && exam) {
                         stmt.run(name, regNo, exam);
                         insertedCheck++;
+                    } else {
+                        failedRows++;
+                        console.log(`Skipping Row ${index} due to missing fields:`, { name, regNo, exam, raw: row });
                     }
                 });
                 db.run("COMMIT");
@@ -65,7 +75,12 @@ router.post('/upload', upload.single('file'), (req, res) => {
 
             // Clean up file
             fs.unlinkSync(req.file.path);
-            res.json({ message: `Processed ${results.length} rows.` });
+            res.json({
+                message: `Processed ${results.length} rows. Successfully added ${insertedCheck} students. Skipped ${failedRows}.`,
+                inserted: insertedCheck,
+                total: results.length,
+                skipped: failedRows
+            });
         })
         .on('error', (err) => {
             res.status(500).json({ error: err.message });
