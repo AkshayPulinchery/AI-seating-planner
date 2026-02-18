@@ -21,6 +21,11 @@ app.use('/api/students', studentRoutes);
 app.use('/api/classrooms', classroomRoutes);
 app.use('/api/seating', seatingRoutes);
 
+// Fix for pinging /api directly
+app.get('/api', (req, res) => {
+    res.send('API is running');
+});
+
 app.get('/', (req, res) => {
     res.send('Exam Seating System API is running');
 });

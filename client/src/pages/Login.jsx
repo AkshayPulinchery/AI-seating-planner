@@ -41,7 +41,8 @@ const Login = () => {
             }
         } catch (err) {
             console.error("Login Error:", err);
-            setError(JSON.stringify(err.message || err));
+            const fullUrl = `${api.defaults.baseURL}/auth/login`;
+            setError(`Failed accessing ${fullUrl}. Details: ${JSON.stringify(err.message || err)}`);
             setStatus('Login Failed');
         } finally {
             setLoading(false);
