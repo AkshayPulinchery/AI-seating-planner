@@ -33,9 +33,10 @@ const Login = () => {
             console.log("Login response:", response.data);
 
             if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
                 setStatus('Login Success! Redirecting...');
-                setTimeout(() => navigate('/'), 500);
+                localStorage.setItem('token', response.data.token);
+                // Force reload to ensure App.jsx re-evaluates isAuthenticated
+                setTimeout(() => window.location.href = '/', 500);
             } else {
                 throw new Error("No token received");
             }
