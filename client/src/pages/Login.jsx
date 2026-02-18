@@ -16,7 +16,8 @@ const Login = () => {
             localStorage.setItem('token', response.data.token);
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.error || 'Login failed');
+            console.error(err);
+            setError(JSON.stringify(err.message || err));
         }
     };
 
@@ -64,6 +65,12 @@ const Login = () => {
                         Sign In
                     </button>
                 </form>
+
+                <div className="mt-8 p-4 bg-gray-50 rounded border text-xs font-mono break-all">
+                    <p className="font-bold">Debugging Info:</p>
+                    <p>API URL: {api.defaults.baseURL}</p>
+                    {error && <p className="text-red-600 mt-2">Error Details: {error}</p>}
+                </div>
             </div>
         </div>
     );
