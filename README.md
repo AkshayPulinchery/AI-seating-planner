@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Exam Seating Arrangement System
 
 This project is a web-based application for automating exam seating arrangements.
@@ -11,3 +12,6 @@ This project is a web-based application for automating exam seating arrangements
 - Frontend: React + Vite + Tailwind CSS
 - Backend: Node.js + Express
 - Database: SQLite
+=======
+# AI-seating-planner
+>>>>>>> 375177e4cffcc6a45dac5eb11332f4f9b58f662e
