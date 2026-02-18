@@ -46,7 +46,7 @@ const Classrooms = () => {
 
             <div className="p-6 bg-white rounded-lg shadow-md">
                 <h3 className="mb-4 text-lg font-semibold flex items-center"><Plus className="w-5 h-5 mr-2" /> Add Classroom</h3>
-                <form onSubmit={handleAddRoom} className="flex gap-4 items-end">
+                <form onSubmit={handleAddRoom} className="flex flex-col md:flex-row gap-4 md:items-end">
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700">Room Name</label>
                         <input

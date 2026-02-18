@@ -83,9 +83,9 @@ const Seating = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h2 className="text-3xl font-bold text-gray-900">Seating Arrangement</h2>
-                <div className="space-x-4">
+                <div className="flex flex-wrap gap-2 md:space-x-4">
                     <button
                         onClick={handleGenerate}
                         disabled={loading}

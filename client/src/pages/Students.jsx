@@ -78,7 +78,7 @@ const Students = () => {
                 <div className="p-6 bg-white rounded-lg shadow-md">
                     <h3 className="mb-4 text-lg font-semibold flex items-center"><Plus className="w-5 h-5 mr-2" /> Add Student</h3>
                     <form onSubmit={handleAddStudent} className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <input
                                 placeholder="Name"
                                 value={newStudent.name}
