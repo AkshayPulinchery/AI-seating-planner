@@ -7,17 +7,44 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [status, setStatus] = useState(''); // For connection status
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    const checkConnection = async () => {
+        setStatus('Pinging server...');
+        try {
+            const res = await api.get('/');
+            setStatus(`Server is Awake! Response: ${res.data}`);
+        } catch (err) {
+            setStatus(`Connection Failed: ${err.message}`);
+        }
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setError('');
+        setStatus('Logging in...');
+
         try {
+            console.log("Sending login request to:", api.defaults.baseURL);
             const response = await api.post('/auth/login', { username, password });
-            localStorage.setItem('token', response.data.token);
-            navigate('/');
+            console.log("Login response:", response.data);
+
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                setStatus('Login Success! Redirecting...');
+                setTimeout(() => navigate('/'), 500);
+            } else {
+                throw new Error("No token received");
+            }
         } catch (err) {
-            console.error(err);
+            console.error("Login Error:", err);
             setError(JSON.stringify(err.message || err));
+            setStatus('Login Failed');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -32,8 +59,14 @@ const Login = () => {
                 </div>
 
                 {error && (
-                    <div className="p-3 text-sm text-red-600 bg-red-100 rounded-md">
+                    <div className="p-3 text-sm text-red-600 bg-red-100 rounded-md break-words">
                         {error}
+                    </div>
+                )}
+
+                {status && (
+                    <div className="p-3 text-sm text-blue-600 bg-blue-50 rounded-md break-words">
+                        {status}
                     </div>
                 )}
 
@@ -60,16 +93,23 @@ const Login = () => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        disabled={loading}
+                        className={`w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        Sign In
+                        {loading ? 'Connecting...' : 'Sign In'}
                     </button>
                 </form>
 
-                <div className="mt-8 p-4 bg-gray-50 rounded border text-xs font-mono break-all">
+                <div className="mt-8 p-4 bg-gray-50 rounded border text-xs font-mono break-all space-y-2">
                     <p className="font-bold">Debugging Info:</p>
                     <p>API URL: {api.defaults.baseURL}</p>
-                    {error && <p className="text-red-600 mt-2">Error Details: {error}</p>}
+                    <button
+                        onClick={checkConnection}
+                        type="button"
+                        className="mt-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 w-full"
+                    >
+                        Test Server Connection
+                    </button>
                 </div>
             </div>
         </div>
