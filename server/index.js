@@ -9,10 +9,18 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true
 }));
+
 app.options('*', cors());
 app.use(express.json());
+
+// Log incoming requests for debugging in Vercel
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
 // Serve uploaded files if any (optional for now)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -40,7 +48,16 @@ app.get('/api', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.send('Exam Seating System API is running');
+    res.json({
+        message: 'Exam Seating System API is running',
+        endpoints: ['/api/auth/login', '/api/students', '/api/classrooms', '/api/seating', '/api/invigilators']
+    });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!', details: err.message });
 });
 
 if (require.main === module) {
