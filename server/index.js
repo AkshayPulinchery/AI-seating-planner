@@ -27,6 +27,13 @@ app.use('/api/classrooms', classroomRoutes);
 app.use('/api/seating', seatingRoutes);
 app.use('/api/invigilators', require('./routes/invigilators'));
 
+// Aliases in case the frontend misses the /api suffix in VITE_API_URL
+app.use('/auth', authRoutes);
+app.use('/students', studentRoutes);
+app.use('/classrooms', classroomRoutes);
+app.use('/seating', seatingRoutes);
+app.use('/invigilators', require('./routes/invigilators'));
+
 // Fix for pinging /api directly
 app.get('/api', (req, res) => {
     res.send('API is running');
