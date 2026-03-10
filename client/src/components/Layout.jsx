@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, School, Armchair, LogOut, KeyRound, Menu, X, User } from 'lucide-react';
+import { LayoutDashboard, Users, School, Armchair, LogOut, KeyRound, Menu, X, User, FileText } from 'lucide-react';
 import clsx from 'clsx';
 
 const Layout = () => {
@@ -13,6 +13,7 @@ const Layout = () => {
         { path: '/classrooms', label: 'Classrooms', icon: School },
         { path: '/invigilators', label: 'Invigilators', icon: User },
         { path: '/seating', label: 'Seating', icon: Armchair },
+        { path: '/reports', label: 'Reports', icon: FileText },
         { path: '/change-password', label: 'Password', icon: KeyRound },
     ];
 

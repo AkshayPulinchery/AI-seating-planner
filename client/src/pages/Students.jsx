@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { Plus, Upload, Trash2, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Students = () => {
     const [students, setStudents] = useState([]);
@@ -29,10 +30,11 @@ const Students = () => {
         e.preventDefault();
         try {
             await api.post('/students', newStudent);
+            toast.success('Student added successfully!');
             setNewStudent({ name: '', registerNumber: '', examCode: '' });
             fetchStudents();
         } catch (error) {
-            alert('Error adding student');
+            toast.error('Error adding student');
         }
     };
 
@@ -47,10 +49,10 @@ const Students = () => {
             });
             setUploadFile(null);
             fetchStudents();
-            alert(res.data.message);
+            toast.success(res.data.message);
         } catch (error) {
             console.error("Upload error:", error);
-            alert('Error uploading file: ' + (error.response?.data?.error || error.message));
+            toast.error('Error uploading file: ' + (error.response?.data?.error || error.message));
         }
     };
 
@@ -58,9 +60,11 @@ const Students = () => {
         if (!window.confirm('Are you sure?')) return;
         try {
             await api.delete(`/students/${id}`);
+            toast.success('Student deleted');
             fetchStudents();
         } catch (error) {
             console.error(error);
+            toast.error('Error deleting student');
         }
     };
 
@@ -69,10 +73,11 @@ const Students = () => {
         if (!window.confirm(`Delete ${selectedStudents.length} students?`)) return;
         try {
             await api.post('/students/delete-bulk', { ids: selectedStudents });
+            toast.success(`Deleted ${selectedStudents.length} students`);
             setSelectedStudents([]);
             fetchStudents();
         } catch (error) {
-            alert("Error deleting students");
+            toast.error("Error deleting students");
         }
     };
 

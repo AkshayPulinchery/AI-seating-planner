@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { Armchair, Download, RefreshCw } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { Armchair, Download, RefreshCw, Search } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import toast from 'react-hot-toast';
 
 const Seating = () => {
     const [seating, setSeating] = useState([]);
+    const [invigilators, setInvigilators] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [assigningRoomId, setAssigningRoomId] = useState(null);
+    const [editingRoomId, setEditingRoomId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchSeating = async () => {
         try {
@@ -18,8 +23,18 @@ const Seating = () => {
         }
     };
 
+    const fetchInvigilators = async () => {
+        try {
+            const res = await api.get('/invigilators');
+            setInvigilators(res.data.filter(i => i.isAvailable !== 0)); // Only show available
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchSeating();
+        fetchInvigilators();
     }, []);
 
     const handleGenerate = async () => {
@@ -27,10 +42,10 @@ const Seating = () => {
         setLoading(true);
         try {
             const res = await api.post('/seating/generate');
-            alert(`Seating Generated! Allocated: ${res.data.allocated} seats.`);
+            toast.success(`Seating Generated! Allocated: ${res.data.allocated} seats.`);
             fetchSeating();
         } catch (error) {
-            alert('Error generating seating: ' + (error.response?.data?.error || error.message));
+            toast.error('Error generating seating: ' + (error.response?.data?.error || error.message));
         } finally {
             setLoading(false);
         }
@@ -51,7 +66,7 @@ const Seating = () => {
             tableRows.push([row.roomName, row.benchNumber, s1, s1Code, s2, s2Code]);
         });
 
-        doc.autoTable({
+        autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 20,
@@ -81,22 +96,82 @@ const Seating = () => {
         XLSX.writeFile(wb, "seating_chart.xlsx");
     };
 
-    // Group seating by room
+    // Filter seating before grouping
+    const filteredSeating = seating.filter(row => {
+        const term = searchTerm.toLowerCase();
+        return (
+            (row.roomName && row.roomName.toLowerCase().includes(term)) ||
+            (row.student1Name && row.student1Name.toLowerCase().includes(term)) ||
+            (row.student1Reg && row.student1Reg.toLowerCase().includes(term)) ||
+            (row.student2Name && row.student2Name.toLowerCase().includes(term)) ||
+            (row.student2Reg && row.student2Reg.toLowerCase().includes(term)) ||
+            (row.benchNumber && row.benchNumber.toString().includes(term))
+        );
+    });
+
     const rooms = {};
-    seating.forEach(row => {
+    filteredSeating.forEach(row => {
         if (!rooms[row.roomName]) {
             rooms[row.roomName] = {
+                roomId: row.roomId,
                 rows: [],
-                invigilators: [row.invigilator1, row.invigilator2].filter(Boolean)
+                invigilator1Id: null,
+                invigilator2Id: null,
+                invigilator1Name: null,
+                invigilator2Name: null,
             };
         }
         rooms[row.roomName].rows.push(row);
+        // Assuming we patch backend to return roomId, inv1Id, inv2Id
+        // We set these values below if they exist
+        if (row.roomId) rooms[row.roomName].roomId = row.roomId;
+        if (row.invigilator1Id) rooms[row.roomName].invigilator1Id = row.invigilator1Id;
+        if (row.invigilator2Id) rooms[row.roomName].invigilator2Id = row.invigilator2Id;
+        if (row.invigilator1) rooms[row.roomName].invigilator1Name = row.invigilator1;
+        if (row.invigilator2) rooms[row.roomName].invigilator2Name = row.invigilator2;
     });
+
+    const handleManualAssign = async (roomId, targetSlot, newInvId, currentRoomObj) => {
+        if (!roomId) { toast.error("Room ID missing!"); return; }
+
+        setAssigningRoomId(roomId);
+        try {
+            let inv1 = targetSlot === 1 ? newInvId : currentRoomObj.invigilator1Id;
+            let inv2 = targetSlot === 2 ? newInvId : currentRoomObj.invigilator2Id;
+
+            await api.post('/seating/manual-assign', {
+                roomId,
+                invigilator1Id: inv1 || null,
+                invigilator2Id: inv2 || null
+            });
+            await fetchSeating();
+            toast.success('Invigilators updated successfully');
+            setEditingRoomId(null);
+        } catch (error) {
+            toast.error("Error assigning invigilator: " + error.message);
+        } finally {
+            setAssigningRoomId(null);
+        }
+    };
 
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h2 className="text-3xl font-bold text-gray-900">Seating Arrangement</h2>
+
+                <div className="relative flex-grow max-w-md mx-4">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search rooms, students, reg no..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                    />
+                </div>
+
                 <div className="flex flex-wrap gap-2 md:space-x-4">
                     <button
                         onClick={handleGenerate}
@@ -122,14 +197,62 @@ const Seating = () => {
             ) : (
                 Object.keys(rooms).map(roomName => (
                     <div key={roomName} className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-                        <div className="p-4 bg-gray-50 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                        <div className="p-4 bg-gray-50 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <h3 className="text-xl font-bold text-gray-800">{roomName}</h3>
-                            <div className="text-sm text-gray-600">
-                                <span className="font-semibold mr-2">Invigilators:</span>
-                                {rooms[roomName].invigilators.length > 0
-                                    ? rooms[roomName].invigilators.join(', ')
-                                    : <span className="text-red-500 italic">None Assigned</span>
-                                }
+                            <div className="text-sm flex flex-col md:flex-row gap-4 md:items-center bg-white p-3 rounded shadow-sm border border-gray-100">
+                                <span className="font-semibold text-gray-700">Assigned Invigilators:</span>
+
+                                {editingRoomId === rooms[roomName].roomId ? (
+                                    <div className="flex gap-2 items-center">
+                                        <select
+                                            className="border rounded p-1.5 text-xs bg-gray-50"
+                                            value={rooms[roomName].invigilator1Id || ""}
+                                            disabled={assigningRoomId === rooms[roomName].roomId}
+                                            onChange={(e) => handleManualAssign(rooms[roomName].roomId, 1, e.target.value, rooms[roomName])}
+                                        >
+                                            <option value="">-- Seat 1 --</option>
+                                            {invigilators.map(inv => (
+                                                <option key={inv.id} value={inv.id}>{inv.name}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            className="border rounded p-1.5 text-xs bg-gray-50"
+                                            value={rooms[roomName].invigilator2Id || ""}
+                                            disabled={assigningRoomId === rooms[roomName].roomId}
+                                            onChange={(e) => handleManualAssign(rooms[roomName].roomId, 2, e.target.value, rooms[roomName])}
+                                        >
+                                            <option value="">-- Seat 2 --</option>
+                                            {invigilators.map(inv => (
+                                                <option key={inv.id} value={inv.id}>{inv.name}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            onClick={() => setEditingRoomId(null)}
+                                            className="text-xs text-blue-600 hover:text-blue-800 underline ml-2"
+                                        >
+                                            Done
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-gray-600">
+                                            {rooms[roomName].invigilator1Name || rooms[roomName].invigilator2Name ? (
+                                                <>
+                                                    {rooms[roomName].invigilator1Name && <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded mr-1">{rooms[roomName].invigilator1Name}</span>}
+                                                    {rooms[roomName].invigilator2Name && <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded">{rooms[roomName].invigilator2Name}</span>}
+                                                </>
+                                            ) : (
+                                                <span className="italic text-gray-400">None Assigned</span>
+                                            )}
+                                        </span>
+                                        <button
+                                            onClick={() => setEditingRoomId(rooms[roomName].roomId)}
+                                            className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                        >
+                                            Change/Swap
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="overflow-x-auto">
