@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ai-seating-backend
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.x
+      # Add other environment variables here if needed
