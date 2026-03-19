@@ -12,7 +12,7 @@ function getAllStudents() {
 
 function getAllClassrooms() {
     return new Promise((resolve, reject) => {
-        db.all("SELECT * FROM classrooms WHERE isAvailable = 1", [], (err, rows) => {
+        db.all("SELECT * FROM classrooms WHERE isAvailable = true", [], (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });
@@ -49,7 +49,7 @@ function insertSeating(seatingData) {
 
 function getAllInvigilators() {
     return new Promise((resolve, reject) => {
-        db.all("SELECT * FROM invigilators WHERE isAvailable = 1", [], (err, rows) => {
+        db.all("SELECT * FROM invigilators WHERE isAvailable = true", [], (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });
@@ -59,7 +59,7 @@ function getAllInvigilators() {
 function clearManualRoomAssignments() {
     return new Promise((resolve, reject) => {
         // Only delete room assignments that are not manually set
-        db.run("DELETE FROM room_assignments WHERE isManual = 0", [], (err) => {
+        db.run("DELETE FROM room_assignments WHERE isManual = false", [], (err) => {
             if (err) reject(err);
             else resolve();
         });
@@ -68,7 +68,7 @@ function clearManualRoomAssignments() {
 
 function getManualRoomAssignments() {
     return new Promise((resolve, reject) => {
-        db.all("SELECT * FROM room_assignments WHERE isManual = 1", [], (err, rows) => {
+        db.all("SELECT * FROM room_assignments WHERE isManual = true", [], (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });

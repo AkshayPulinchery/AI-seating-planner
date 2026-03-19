@@ -57,7 +57,7 @@ router.post('/manual-assign', async (req, res) => {
         // Insert manual override
         await new Promise((resolve, reject) => {
             db.run(
-                "INSERT INTO room_assignments (roomId, invigilator1Id, invigilator2Id, isManual) VALUES ($1, $2, $3, 1)",
+                "INSERT INTO room_assignments (roomId, invigilator1Id, invigilator2Id, isManual) VALUES ($1, $2, $3, true)",
                 [roomId, invigilator1Id || null, invigilator2Id || null],
                 (err) => { if (err) reject(err); else resolve(); }
             );

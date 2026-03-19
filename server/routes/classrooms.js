@@ -132,7 +132,7 @@ router.delete('/:id', (req, res) => {
 // Toggle Availability
 router.put('/:id/availability', (req, res) => {
     const { isAvailable } = req.body;
-    db.run("UPDATE classrooms SET isAvailable = $1 WHERE id = $2", [isAvailable ? 1 : 0, req.params.id], function (err) {
+    db.run("UPDATE classrooms SET isAvailable = $1 WHERE id = $2", [isAvailable ? true : false, req.params.id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Updated successfully' });
         // Auto-generate seating in background due to availability change
