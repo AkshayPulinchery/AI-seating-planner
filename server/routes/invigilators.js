@@ -3,11 +3,10 @@ const router = express.Router();
 const db = require('../db');
 const multer = require('multer');
 const csv = require('csv-parser');
-const fs = require('fs');
-const path = require('path');
+const { Readable } = require('stream');
 const { generateSeating } = require('../utils/allocation');
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Get all invigilators
 router.get('/', (req, res) => {
@@ -33,7 +32,10 @@ router.post('/upload', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
     const results = [];
-    fs.createReadStream(req.file.path)
+    const bufferStream = new Readable();
+    bufferStream.push(req.file.buffer);
+    bufferStream.push(null);
+    bufferStream
         .pipe(csv())
         .on('data', (data) => results.push(data))
         .on('end', async () => {
@@ -77,7 +79,7 @@ router.post('/upload', upload.single('file'), (req, res) => {
                 client.release();
             }
 
-            fs.unlinkSync(req.file.path);
+
             res.json({
                 message: `Processed ${results.length} rows. Attempted ${insertedCheck} invigilators. Skipped ${failedRows}.`,
                 inserted: insertedCheck,
