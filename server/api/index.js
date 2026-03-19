@@ -15,7 +15,16 @@ try {
         credentials: true
     }));
 
-    app.options('*', cors());
+    // Handle CORS preflight for all routes (Express 5 compatible)
+    app.use((req, res, next) => {
+        if (req.method === 'OPTIONS') {
+            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+            return res.sendStatus(204);
+        }
+        next();
+    });
     app.use(express.json());
 
     // Log incoming requests for debugging in Vercel
