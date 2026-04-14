@@ -7,25 +7,16 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [status, setStatus] = useState(''); // For connection status
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const checkConnection = async () => {
-        setStatus('Pinging server...');
-        try {
-            const res = await api.get('/');
-            setStatus(`Server is Awake! Response: ${res.data}`);
-        } catch (err) {
-            setStatus(`Connection Failed: ${err.message}`);
-        }
-    };
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
-        setStatus('Logging in...');
+
 
         try {
             console.log("Sending login request to:", api.defaults.baseURL);
@@ -33,7 +24,7 @@ const Login = () => {
             console.log("Login response:", response.data);
 
             if (response.data.token) {
-                setStatus('Login Success! Redirecting...');
+
                 localStorage.setItem('token', response.data.token);
                 // Force reload to ensure App.jsx re-evaluates isAuthenticated
                 setTimeout(() => window.location.href = '/', 500);
@@ -44,7 +35,7 @@ const Login = () => {
             console.error("Login Error:", err);
             const fullUrl = `${api.defaults.baseURL}/auth/login`;
             setError(`Failed accessing ${fullUrl}. Details: ${JSON.stringify(err.message || err)}`);
-            setStatus('Login Failed');
+
         } finally {
             setLoading(false);
         }
@@ -66,11 +57,7 @@ const Login = () => {
                     </div>
                 )}
 
-                {status && (
-                    <div className="p-3 text-sm text-blue-600 bg-blue-50 rounded-md break-words">
-                        {status}
-                    </div>
-                )}
+
 
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div>
@@ -102,17 +89,6 @@ const Login = () => {
                     </button>
                 </form>
 
-                <div className="mt-8 p-4 bg-gray-50 rounded border text-xs font-mono break-all space-y-2">
-                    <p className="font-bold">Debugging Info:</p>
-                    <p>API URL: {api.defaults.baseURL}</p>
-                    <button
-                        onClick={checkConnection}
-                        type="button"
-                        className="mt-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 w-full"
-                    >
-                        Test Server Connection
-                    </button>
-                </div>
             </div>
         </div>
     );
